@@ -1,0 +1,81 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20240621170114
+Username: ENTERPRISE\S0381923
+RunAs User: ENTERPRISE\S0381923
+Configuration Name: 
+Machine: LAPP09278 (Microsoft Windows NT 10.0.22631.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\S0381923\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\browser\media\shellIntegration.ps1" } catch {}
+Process ID: 23924
+PSVersion: 5.1.22621.3672
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22621.3672
+BuildVersion: 10.0.22621.3672
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+PS>try { . "c:\Users\S0381923\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\browser\media\shellIntegration.ps1" } catch {}
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+warning: in the working copy of '20240621/PowerShell_transcript.LAPP09278.tMn0gQyj.20240621132035.txt', LF will be replaced by CRLF the next time Gi
+t touches it
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "added .internet to androidmanifest.xml, testing deviceTracker by Mac/IP"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add . 
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "added azure oauth flow"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "api endpoints tested & finalized"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "added input and parameter passing to free switchport view"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "finalised device by switch name lookup"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+warning: in the working copy of 'linux/flutter/generated_plugin_registrant.cc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'linux/flutter/generated_plugin_registrant.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'linux/flutter/generated_plugins.cmake', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'macos/Flutter/GeneratedPluginRegistrant.swift', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'windows/flutter/generated_plugin_registrant.cc', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'windows/flutter/generated_plugin_registrant.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'windows/flutter/generated_plugins.cmake', LF will be replaced by CRLF the next time Git touches it
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "finalized all views "
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "replaced push with pushreplacement"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git add .
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git commit -m "replaced push with pushreplacement"
+
+PS C:\Users\S0381923\Desktop\App\netsmart> git push
+
+PS C:\Users\S0381923\Desktop\App\netsmart> flutter build apk --debug
+
+
+PS C:\Users\S0381923\Desktop\App\netsmart> flutter clean
+
+PS C:\Users\S0381923\Desktop\App\netsmart> flutter run
+
+PS C:\Users\S0381923\Desktop\App\netsmart> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
