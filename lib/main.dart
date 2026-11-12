@@ -1,104 +1,88 @@
-import 'dart:io' show Platform;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:netsmart/api_service.dart';
-import 'package:netsmart/devicetracker_mac_detail_view.dart';
-import 'package:netsmart/devicetracker_mac_input_widget.dart';
-import 'package:netsmart/devicetracker_switch_input_widget.dart';
-import 'package:netsmart/freeswitchport_input_widget.dart';
-import 'package:netsmart/homepage_view.dart';
-import 'package:netsmart/devicetracker_switch_view.dart';
-import 'package:netsmart/freeswitchport_view.dart';
-import 'colors.dart'; // Import your colors.dart file
-import 'devicetracker_switch_expanded_view.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import 'app_state.dart';
+import 'screens/home_shell.dart';
+import 'screens/sign_in_screen.dart';
+import 'services/prefs.dart';
+import 'theme.dart';
+import 'widgets/common.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+  final state = AppState(await Prefs.load());
+  runApp(ChangeNotifierProvider.value(value: state, child: const NetSmartApp()));
+  state.start();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class NetSmartApp extends StatelessWidget {
+  const NetSmartApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isIOS) {
-      return CupertinoApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Device Lookup',
-        localizationsDelegates: const [
-          DefaultMaterialLocalizations.delegate,
-          DefaultWidgetsLocalizations.delegate,
-          DefaultCupertinoLocalizations.delegate,
-        ],
+    return MaterialApp(
+      title: 'NetSmart',
+      debugShowCheckedModeBanner: false,
+      theme: buildTheme(),
+      darkTheme: buildTheme(),
+      themeMode: ThemeMode.dark,
+      builder: (context, child) => _DemoFrame(child: child!),
+      home: const _Root(),
+    );
+  }
+}
 
-        theme: CupertinoThemeData(
-          primaryColor: AppColors.primary,
-          scaffoldBackgroundColor: AppColors.background,
-          barBackgroundColor: AppColors.primary,
-          textTheme: CupertinoTextThemeData(
-            textStyle: TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-            ),
+/// Keeps the demo banner above every route while demo mode is on.
+class _DemoFrame extends StatelessWidget {
+  const _DemoFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final demo = context.select<AppState, bool>((s) => s.status == AppStatus.ready && s.isDemo);
+    if (!demo) return child;
+    return ColoredBox(
+      color: NS.bg,
+      child: Column(children: [
+        const SafeArea(bottom: false, child: Material(type: MaterialType.transparency, child: DemoBanner())),
+        Expanded(child: MediaQuery.removePadding(context: context, removeTop: true, child: child)),
+      ]),
+    );
+  }
+}
+
+class _Root extends StatelessWidget {
+  const _Root();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    return switch (state.status) {
+      AppStatus.loading => const Scaffold(body: Loading()),
+      AppStatus.signedOut => const SignInScreen(),
+      AppStatus.ready => HomeShell(key: ValueKey(state.isDemo)),
+      AppStatus.updateRequired => const Scaffold(
+          body: CenterMessage(
+            icon: Icons.system_update,
+            title: 'Update required',
+            body: 'This version of NetSmart is no longer supported. Update the app from the App Store.',
           ),
         ),
-        home: HomePage(), 
-        routes: {
-          '/device_tracker_mac_ip': (context) => IPMACInputWidget(),
-          '/device_tracker_switch_name': (context) => DeviceNameInputWidget(),
-          '/free_switchport': (context) => SwitchportInputWidget(),
-        },
-      );
-    } else {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Device Lookup',
-        theme: ThemeData(
-          brightness: Brightness.light,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-          primaryColor: AppColors.primary,
-          scaffoldBackgroundColor: AppColors.background,
-          appBarTheme: AppBarTheme(
-            color: AppColors.primary,
-            iconTheme: IconThemeData(color: AppColors.highlight),
-            titleTextStyle: TextStyle(
-              color: AppColors.highlight,
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
-            ),
+      AppStatus.offline => Scaffold(
+          body: CenterMessage(
+            icon: Icons.wifi_off,
+            title: "Can't reach NetSmart",
+            body: state.notice ?? 'Connect to the Stanford network or VPN and try again.',
+            action: Column(children: [
+              FilledButton(onPressed: state.reloadMe, child: const Text('Try again')),
+              const SizedBox(height: 8),
+              TextButton(onPressed: state.signOut, child: const Text('Sign out')),
+            ]),
           ),
-          textTheme: TextTheme(
-            headlineLarge: TextStyle(color: AppColors.primary),
-            bodyLarge: TextStyle(color: Colors.black),
-          ),
-          buttonTheme: ButtonThemeData(
-            buttonColor: AppColors.accent,
-            textTheme: ButtonTextTheme.primary,
-          ),
-          iconTheme: IconThemeData(
-            color: AppColors.secondary,
-          ),
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: AppColors.primary,
-            secondary: AppColors.accent,
-            background: AppColors.background,
-            surface: AppColors.lightNeutral,
-            onPrimary: AppColors.highlight,
-            onSecondary: AppColors.neutral,
-            onBackground: AppColors.neutral,
-            onSurface: AppColors.neutral,
-          ),
-          useMaterial3: true,
         ),
-        home: HomePage(),
-        
-        routes: {
-          '/device_tracker_mac_ip': (context) => IPMACInputWidget(),
-          '/device_tracker_switch_name': (context) => DeviceNameInputWidget(),
-          '/free_switchport': (context) => SwitchportInputWidget(),
-        },
-      );
-    }
+    };
   }
 }
