@@ -30,8 +30,20 @@ final Map<String, Widget Function()> nativeTools = {
   'team_calendar': () => const TeamCalendarScreen(),
 };
 
+/// Opens a link to another site (e.g. NetSmart DCM) in an in-app browser
+/// sheet (SFSafariViewController / Custom Tab) so the user stays in the app.
+/// The one-time web ticket only signs in to the NetSmart host, so these use
+/// their own login. Falls back to the system browser if the sheet can't open.
+Future<bool> openOffsite(Uri uri) async {
+  try {
+    if (await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) return true;
+  } catch (_) {}
+  return launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
 /// Opens a sidebar item: switches tab, pushes the native screen, opens an
-/// external link in Safari, or shows the web page signed-in inside the app.
+/// external link in an in-app browser sheet, or shows the web page signed-in
+/// inside the app.
 Future<void> openNavItem(BuildContext context, Json item, {bool Function(String tab)? selectTab}) async {
   final state = context.read<AppState>();
   final native = str(item['native']);
@@ -49,7 +61,7 @@ Future<void> openNavItem(BuildContext context, Json item, {bool Function(String 
   }
   final url = str(item['url']);
   if (item['external'] == true && url.isNotEmpty) {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok = await openOffsite(Uri.parse(url));
     if (!ok && context.mounted) showSnack(context, "Couldn't open $url", error: true);
     return;
   }

@@ -58,7 +58,9 @@ capability from `/me`):
   `rb_nav_content` block of `templates/reimagined_base.html` and parses it
   (`GET nav`), so permissions and new web links carry over automatically.
   Items open a bottom tab, a native screen (`lib/screens/tools/`, registry in
-  `tool_router.dart`), Safari (external links), or the web page in-app
+  `tool_router.dart`), an in-app browser sheet (external links on other hosts,
+  e.g. NetSmart DCM — `openOffsite`; own login, the ticket only covers the
+  NetSmart host), or the web page in-app
   (`WebToolScreen`, WKWebView) **already signed in** via a one-time ticket —
   the user never logs in twice. Native so far: Subnet Calculator (on-device),
   Subnet Lookup, DHCP IP/MAC Lookup, DNS Lookup, DC Fabric VLANs, Ping from

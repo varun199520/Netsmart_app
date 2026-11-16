@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app_state.dart';
@@ -11,6 +10,7 @@ import '../config.dart';
 import '../services/api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'tools/tool_router.dart' show openOffsite;
 
 /// A NetSmart web page inside the app, already signed in.
 ///
@@ -131,7 +131,7 @@ class _WebToolScreenState extends State<WebToolScreen> {
     final sso = uri.host.contains('adfs') || uri.host.contains('login.microsoftonline');
     if (sameSite || sso) return NavigationDecision.navigate;
     if (request.isMainFrame) {
-      launchUrl(uri, mode: LaunchMode.externalApplication);
+      openOffsite(uri);
     }
     return NavigationDecision.prevent;
   }
