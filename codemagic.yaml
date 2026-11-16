@@ -1,0 +1,61 @@
+# Codemagic CI: builds the iOS app on a cloud Mac and uploads it to TestFlight.
+# Lets the app be shipped from Linux with no local Mac/Xcode.
+#
+# One-time setup in Codemagic (codemagic.io), done by someone with access to
+# Apple team 5A9ULTV2QN:
+#   1. Team settings → Integrations → Developer Portal: add an App Store Connect
+#      API key (App Store Connect → Users and Access → Integrations → Keys,
+#      role "App Manager"). Name it exactly as in `integrations` below.
+#   2. Team settings → Code signing identities: upload (or let Codemagic fetch)
+#      an "Apple Distribution" certificate and an App Store provisioning
+#      profile for com.example.netsmart.5A9ULTV2QN with Push Notifications.
+#   3. Add this repository as an app and pick the `ios-testflight` workflow.
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: NetSmart App Store Connect
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        # The existing App Store listing. Never change this.
+        bundle_identifier: com.example.netsmart.5A9ULTV2QN
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: feature/mobile_app
+          include: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Analyze
+        # Newer Flutter flags package:flutter/material.dart as deprecated
+        # (info level only); don't fail the build on infos.
+        script: flutter analyze --no-fatal-infos
+      - name: Widget tests
+        script: flutter test
+      - name: Install pods
+        script: cd ios && pod install --repo-update
+      - name: Apply signing profiles
+        script: xcode-project use-profiles
+      - name: Build ipa
+        # Version (X.Y.Z) comes from pubspec.yaml; the build number is
+        # Codemagic's build counter, so every upload is unique.
+        script: |
+          flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
