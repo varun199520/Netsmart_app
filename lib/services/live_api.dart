@@ -155,6 +155,51 @@ class LiveApi implements NetsmartApi {
   }
 
   @override
+  Future<Json> navigation() => _get('nav');
+
+  @override
+  Future<Json> webSession(String path) => _post('auth/web-session', {'path': path});
+
+  @override
+  Future<Json> dcVlans(Map<String, String> filters) => _get('tools/dc-vlans', filters);
+
+  @override
+  Future<Json> changeRequests({bool refresh = false}) => _get('tools/changes', {if (refresh) 'refresh': '1'});
+
+  @override
+  Future<Json> changeRequest(String sysId) => _get('tools/changes/${Uri.encodeComponent(sysId)}');
+
+  @override
+  Future<List<Json>> calendarEvents(DateTime from, DateTime to) async =>
+      jsonList((await _get('tools/calendar', {'from': _day(from), 'to': _day(to)}))['results']);
+
+  static String _day(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  @override
+  Future<Json> nurseCallSwitches() => _get('tools/nurse-call');
+
+  @override
+  Future<List<Json>> sites(String query) async =>
+      jsonList((await _get('tools/sites', {if (query.isNotEmpty) 'q': query}))['results']);
+
+  @override
+  Future<Json> site(String siteId) => _get('tools/sites/${Uri.encodeComponent(siteId)}');
+
+  @override
+  Future<Json> dnsLookup(String query) => _get('tools/dns', {'q': query});
+
+  @override
+  Future<Json> ipInfo(String query) => _get('tools/ip-info', {'q': query});
+
+  @override
+  Future<Json> subnetInventory(String network, {String show = 'all'}) =>
+      _get('tools/subnet', {'net': network, 'show': show});
+
+  @override
+  Future<Json> pingOptions() => _get('tools/ping');
+
+  @override
   Future<List<Json>> deviceSessions() async => jsonList((await _get('auth/sessions'))['results']);
 
   @override

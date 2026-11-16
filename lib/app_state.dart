@@ -11,6 +11,7 @@ import 'services/demo_api.dart';
 import 'services/live_api.dart';
 import 'services/prefs.dart';
 import 'services/push.dart';
+import 'services/web_session.dart';
 
 enum AppStatus { loading, signedOut, offline, updateRequired, ready }
 
@@ -32,6 +33,37 @@ class AppState extends ChangeNotifier {
   bool get isDemo => _api?.isDemo ?? false;
   Json get caps => jsonMap(me?['capabilities']);
   bool can(String capability) => caps[capability] == true;
+
+  /// The web app's sidebar for this user (see [NetsmartApi.navigation]).
+  Json? nav;
+  String? navError;
+  DateTime? _navLoadedAt;
+  bool _navLoading = false;
+
+  /// Loads the sidebar once, then again when it's more than 10 minutes old
+  /// (permissions can change on the server) or when [force] is set.
+  Future<void> loadNav({bool force = false}) async {
+    if (_api == null || _navLoading) return;
+    final fresh = _navLoadedAt != null && DateTime.now().difference(_navLoadedAt!) < const Duration(minutes: 10);
+    if (nav != null && fresh && !force) return;
+    _navLoading = true;
+    try {
+      nav = await api.navigation();
+      navError = null;
+      _navLoadedAt = DateTime.now();
+    } on ApiException catch (e) {
+      navError = e.message;
+    } finally {
+      _navLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void _clearNav() {
+    nav = null;
+    navError = null;
+    _navLoadedAt = null;
+  }
 
   Future<void> start() async {
     if (await _updateRequired()) {
@@ -64,6 +96,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       await auth.signIn();
+      _clearNav();
+      await clearWebSession();
       _api = LiveApi(auth);
       me = await api.me();
       status = AppStatus.ready;
@@ -80,6 +114,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> enterDemo() async {
+    _clearNav();
     _api = DemoApi();
     me = await api.me();
     notice = null;
@@ -91,6 +126,8 @@ class AppState extends ChangeNotifier {
     if (api != null) await api.logout();
     _api = null;
     me = null;
+    _clearNav();
+    await clearWebSession();
     _set(AppStatus.signedOut);
   }
 
@@ -117,6 +154,8 @@ class AppState extends ChangeNotifier {
   void _sessionEnded(String message) {
     _api = null;
     me = null;
+    _clearNav();
+    clearWebSession();
     notice = message;
     _set(AppStatus.signedOut);
   }

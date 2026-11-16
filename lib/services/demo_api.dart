@@ -256,7 +256,12 @@ class DemoApi implements NetsmartApi {
     final kind = str(body['kind']);
     final id = 'demo-job-${++_seq}';
     final port = str(body['port']);
-    final target = kind == 'dhcp_reserve' ? '${body['mac']} ${body['ip'] ?? body['subnet']}' : '$switchName $port';
+    final target = switch (kind) {
+      'dhcp_reserve' => '${body['mac']} ${body['ip'] ?? body['subnet']}',
+      'ping' => '${body['ip']} (${body['vrf']})',
+      'port_usage' => switchName,
+      _ => '$switchName $port',
+    };
     _jobStarted[id] = DateTime.now();
     _jobs[id] = {
       'id': id,
@@ -264,7 +269,9 @@ class DemoApi implements NetsmartApi {
       'status': 'queued',
       'done': false,
       'target': target,
-      'switch': kind == 'dhcp_reserve' && body['switch_id'] == null ? null : {'id': switchId, 'name': switchName},
+      'switch': (kind == 'dhcp_reserve' && body['switch_id'] == null) || kind == 'ping'
+          ? null
+          : {'id': switchId, 'name': switchName},
       'params': Json.from(body)..remove('kind'),
       'result': null,
       'message': '',
@@ -329,6 +336,35 @@ class DemoApi implements NetsmartApi {
           'oper_status': 'up',
           'saved': true,
           'revert_due_at': job['kind'] == 'ise_removal' ? DateTime.now().add(const Duration(hours: 4)).toIso8601String() : null,
+        };
+      case 'ping':
+        final ip = str(params['ip']);
+        return {
+          'status': 'success',
+          'switch': switchName,
+          'ip': ip,
+          'vrf': params['vrf'],
+          'success_rate': 100,
+          'output': 'Type escape sequence to abort.\n'
+              'Sending 10, 100-byte ICMP Echos to $ip, timeout is 2 seconds:\n'
+              '!!!!!!!!!!\n'
+              'Success rate is 100 percent (10/10), round-trip min/avg/max = 1/1/3 ms',
+        };
+      case 'port_usage':
+        final unused = _ports.where((p) => p['status'] == 'free').toList();
+        return {
+          'status': 'success',
+          'switch': switchName,
+          'uptime': '12 weeks, 3 days, 4 hours',
+          'total': 22,
+          'used': 22 - unused.length,
+          'unused': unused.length,
+          'used_pct': ((22 - unused.length) * 100 / 22).round(),
+          'unused_pct': (unused.length * 100 / 22).round(),
+          'unused_ports': [
+            for (final p in unused)
+              {'interface': p['name'], 'link_status': 'down', 'last_input': 'never', 'description': p['description']},
+          ],
         };
       default:
         final ip = params['ip'] ?? '192.0.2.${60 + _seq}';
@@ -407,6 +443,314 @@ class DemoApi implements NetsmartApi {
 
   @override
   Future<ChatConnection> openChat() async => _DemoChat(this);
+
+  // ── web navigation + native tools ────────────────────────────────────────
+
+  static Json _item(String title, String path, [String? native]) =>
+      {'title': title, 'path': path, 'native': ?native};
+
+  @override
+  Future<Json> navigation() => _delay({
+        'sections': [
+          {
+            'title': 'AI & Automation',
+            'accent': 'ai',
+            'groups': [
+              {
+                'label': 'AI Assistant',
+                'icon': 'bxs-brain',
+                'items': [_item('NetSmart AI', '/netsmart-chat/', 'chat'), _item('My Memory', '/settings/my_memory/')],
+              },
+            ],
+          },
+          {
+            'title': 'Network Operations',
+            'accent': 'network',
+            'groups': [
+              {
+                'label': 'Node & Device',
+                'icon': 'bxs-devices',
+                'items': [_item('Device Tracker', '/deviceTracker/', 'tracker'), _item('Config Changes', '/node_manager/config-changes/')],
+              },
+              {
+                'label': 'Switch Management',
+                'icon': 'bx-chip',
+                'items': [
+                  _item('Ping from Switch', '/switchport_config/ping/', 'ping'),
+                  _item('Available Switchports', '/switchport_stat/', 'port_usage'),
+                  _item('Nurse Call Switches', '/switchport_config/nurse_call_switches/', 'nurse_call'),
+                  _item('Site Locations', '/switchport_stat/site_locations/', 'site_locations'),
+                ],
+              },
+              {
+                'label': 'DC Fabric & VRF',
+                'icon': 'bx-server',
+                'items': [_item('DC Fabric VLAN Tracker', '/dc_fabric/dc_vlan_search', 'dc_vlans')],
+              },
+            ],
+          },
+          {
+            'title': 'Security & Access',
+            'accent': 'security',
+            'groups': [
+              {
+                'label': 'DNS & IP Management',
+                'icon': 'fa-circle-nodes',
+                'items': [
+                  _item('DNS Lookup', '/dhcp/record_lookup/', 'dns_lookup'),
+                  _item('IP Reservations', '/dhcp/', 'dhcp'),
+                  _item('DHCP IP/MAC Lookup', '/dhcp/ip_info/', 'ip_mac_lookup'),
+                  _item('Subnet Lookup', '/dhcp/ip_lookup/', 'subnet_lookup'),
+                  _item('Subnet Calculator', '/dhcp/subnet_calculator/', 'subnet_calculator'),
+                ],
+              },
+            ],
+          },
+          {
+            'title': 'Integrations',
+            'accent': 'integr',
+            'groups': [
+              {
+                'label': 'Change Management',
+                'icon': 'bx-calendar-check',
+                'items': [_item('Change Requests', '/cr_view/', 'change_requests')],
+              },
+            ],
+          },
+          {
+            'title': 'IT Operations',
+            'accent': 'itops',
+            'groups': [
+              {
+                'label': 'Team Calendar',
+                'icon': 'bx-calendar',
+                'items': [_item('Team Calendar', '/team-calendar/', 'team_calendar')],
+              },
+            ],
+          },
+          {
+            'title': 'Documentation',
+            'accent': 'content',
+            'groups': [
+              {
+                'label': 'Guides',
+                'icon': 'bxs-book-open',
+                'items': [_item('User Guide', '/docs/user-guide/')],
+              },
+            ],
+          },
+        ],
+      });
+
+  @override
+  Future<Json> webSession(String path) async =>
+      throw ApiException('This page opens the NetSmart website, which needs a real sign-in. '
+          'Demo mode only includes the native screens.', code: 'demo');
+
+  static const _dcVlans = [
+    {'vlan': 210, 'name': 'APP-WEB', 'subnet': '192.0.2.0/26', 'vrf': 'APP', 'dc': 'DC-A', 'switch': 'DEMO-DC-LEAF01', 'switch_ip': '198.51.100.11'},
+    {'vlan': 210, 'name': 'APP-WEB', 'subnet': '192.0.2.0/26', 'vrf': 'APP', 'dc': 'DC-A', 'switch': 'DEMO-DC-LEAF02', 'switch_ip': '198.51.100.12'},
+    {'vlan': 220, 'name': 'APP-DB', 'subnet': '192.0.2.64/26', 'vrf': 'APP', 'dc': 'DC-A', 'switch': 'DEMO-DC-LEAF01', 'switch_ip': '198.51.100.11'},
+    {'vlan': 310, 'name': 'MGMT', 'subnet': '198.51.100.0/25', 'vrf': 'MGMT', 'dc': 'DC-B', 'switch': 'DEMO-DC-LEAF03', 'switch_ip': '198.51.100.13'},
+  ];
+
+  @override
+  Future<Json> dcVlans(Map<String, String> filters) {
+    bool keep(Map<String, Object> v) => filters.entries.every((f) {
+          final q = f.value.trim().toLowerCase();
+          if (q.isEmpty) return true;
+          return switch (f.key) {
+            'vlan' => '${v['vlan']}' == q,
+            'switch' => '${v['switch']}'.toLowerCase().contains(q),
+            'ip' => '${v['subnet']}'.startsWith(q.split('/').first.split('.').take(3).join('.')),
+            _ => '${v[f.key]}'.toLowerCase().contains(q),
+          };
+        });
+    final rows = _dcVlans.where(keep).map(Json.from).toList();
+    return _delay({'count': rows.length, 'results': rows});
+  }
+
+  Json _change(String n, String desc, String type, int startHours, int lengthHours, {bool started = false}) {
+    final start = DateTime.now().add(Duration(hours: startHours));
+    return {
+      'sys_id': 'demo-$n',
+      'number': n,
+      'short_description': desc,
+      'change_type': type,
+      'assigned_to': 'Demo User',
+      'state': started ? 'Implement' : 'Scheduled',
+      'planned_start': start.toIso8601String(),
+      'planned_end': start.add(Duration(hours: lengthHours)).toIso8601String(),
+      'outage_start': null,
+      'outage_end': null,
+      'work_start': started ? DateTime.now().subtract(const Duration(minutes: 40)).toIso8601String() : null,
+    };
+  }
+
+  @override
+  Future<Json> changeRequests({bool refresh = false}) => _delay({
+        'ok': true,
+        'error': null,
+        'last_synced': DateTime.now().subtract(const Duration(minutes: 9)).toIso8601String(),
+        'in_progress': [_change('CHG0010001', 'Replace access switch in demo closet', 'Normal', -1, 3, started: true)],
+        'scheduled': [
+          _change('CHG0010002', 'Upgrade distribution pair firmware', 'Normal', 26, 4),
+          _change('CHG0010003', 'Add VLAN 30 to demo trunk', 'Standard', 50, 1),
+        ],
+      });
+
+  @override
+  Future<Json> changeRequest(String sysId) async {
+    final all = [...jsonList((await changeRequests())['in_progress']), ...jsonList((await changeRequests())['scheduled'])];
+    final c = all.firstWhere((c) => c['sys_id'] == sysId, orElse: () => all.first);
+    return _delay({
+      'change': {...c, 'description': '${c['short_description']}. Sample change for demo mode.', 'risk': 'Low', 'priority': '4 - Low', 'state_label': c['state']},
+      'tasks': [
+        {'number': 'CTASK0020001', 'short_description': 'Pre-checks', 'state': 'Closed', 'assignment_group': 'Network', 'assigned_to': 'Demo User'},
+        {'number': 'CTASK0020002', 'short_description': 'Implementation', 'state': 'Open', 'assignment_group': 'Network', 'assigned_to': 'Demo User'},
+      ],
+      'affected_cis': [switchName, 'DEMO-DIST-01'],
+      'work_notes': 'Demo work note: pre-checks complete.',
+    });
+  }
+
+  @override
+  Future<List<Json>> calendarEvents(DateTime from, DateTime to) {
+    final today = DateTime.now();
+    String d(int offset) => DateTime(today.year, today.month, today.day + offset).toIso8601String().substring(0, 10);
+    return _delay([
+      {'id': 'e1', 'username': 'demo', 'name': 'Demo User', 'type': 'oncall', 'type_label': 'On-call', 'title': 'On-call', 'start_date': d(-2), 'end_date': d(4)},
+      {'id': 'e2', 'username': 'alex', 'name': 'Alex Sample', 'type': 'pto', 'type_label': 'PTO', 'title': 'Vacation', 'start_date': d(0), 'end_date': d(2)},
+      {'id': 'e3', 'username': 'sam', 'name': 'Sam Example', 'type': 'wfh', 'type_label': 'Work from home', 'title': 'WFH', 'start_date': d(1), 'end_date': d(1)},
+      {'id': 'e4', 'username': 'kim', 'name': 'Kim Placeholder', 'type': 'travel', 'type_label': 'Travel', 'title': 'Site visit', 'start_date': d(6), 'end_date': d(8)},
+    ]);
+  }
+
+  @override
+  Future<Json> nurseCallSwitches() => _delay({
+        'total': 2,
+        'reachable': 1,
+        'results': [
+          {'id': switchId, 'name': 'DEMO-NCF-SW01', 'ip': '192.0.2.20', 'reachable': true, 'access_ports': 24},
+          {'id': '00000000-0000-4000-8000-000000000002', 'name': 'DEMO-NCF-SW02', 'ip': '192.0.2.21', 'reachable': false, 'access_ports': 48},
+        ],
+      });
+
+  static const _sites = [
+    {'id': '1', 'name': 'Demo Campus', 'site_type': 'Campus', 'address': '1 Example Way', 'devices': 3},
+    {'id': '2', 'name': 'Demo Clinic', 'site_type': 'Clinic', 'address': '200 Sample St', 'devices': 1},
+  ];
+
+  @override
+  Future<List<Json>> sites(String query) => _delay(_sites
+      .where((s) => query.isEmpty || '${s['name']}'.toLowerCase().contains(query.toLowerCase()))
+      .map(Json.from)
+      .toList());
+
+  @override
+  Future<Json> site(String siteId) {
+    final s = _sites.firstWhere((s) => s['id'] == siteId, orElse: () => _sites.first);
+    return _delay({
+      'site': Json.from(s),
+      'nodes': [
+        {'id': switchId, 'name': switchName, 'ip': '192.0.2.10', 'location': 'Closet 1A', 'reachable': true, 'role': 'access'},
+        if (s['id'] == '1') ...[
+          {'id': '00000000-0000-4000-8000-000000000003', 'name': 'DEMO-DIST-01', 'ip': '192.0.2.2', 'location': 'MDF', 'reachable': true, 'role': 'distribution'},
+          {'id': '00000000-0000-4000-8000-000000000004', 'name': 'DEMO-ACC-SW02', 'ip': '192.0.2.11', 'location': 'Closet 2B', 'reachable': false, 'role': 'access'},
+        ],
+      ],
+    });
+  }
+
+  @override
+  Future<Json> dnsLookup(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) throw ApiException('Enter a hostname or IP address.');
+    final isIp = RegExp(r'^\d+\.\d+\.\d+\.\d+$').hasMatch(q);
+    final host = isIp ? 'workstation-00.demo.example' : (q.contains('.') ? q : '$q.demo.example');
+    final ip = isIp ? q : '192.0.2.100';
+    return _delay({
+      'query': query,
+      'records': [
+        {'rtype': 'A', 'name': host, 'target': ip, 'servers': ['Primary', 'Secondary'], 'missing': <String>[]},
+        {'rtype': 'PTR', 'name': '${ip.split('.').reversed.join('.')}.in-addr.arpa', 'target': host, 'servers': ['Primary'], 'missing': ['Secondary']},
+      ],
+      'errors': <Json>[],
+    });
+  }
+
+  @override
+  Future<Json> ipInfo(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) throw ApiException('Enter an IP or MAC address.');
+    final r = _reservations.firstWhere(
+        (r) => r['ip'] == q || str(r['mac']).replaceAll(':', '') == q.replaceAll(RegExp(r'[^0-9a-f]'), ''),
+        orElse: () => {'ip': q.contains('.') ? q : '192.0.2.77', 'mac': q.contains('.') ? '00:1b:63:10:00:5a' : q, 'name': 'workstation-00'});
+    final reserved = _reservations.contains(r);
+    return _delay({
+      'query': query,
+      'results': [
+        {
+          'ip_address': r['ip'],
+          'mac_address': r['mac'],
+          'hostname': r['name'],
+          'network': '192.0.2.0/24',
+          'lease_state': reserved ? 'FREE' : 'LEASED',
+          'lease_expires': reserved ? null : DateTime.now().add(const Duration(hours: 6)).toIso8601String(),
+          'dhcp_range': reserved ? 'Outside Of DHCP Range' : 'Active DHCP Lease',
+          'fixed_address': reserved ? 'Reservation' : null,
+          'reserved': reserved,
+          'is_conflict': false,
+        },
+      ],
+      'errors': <Json>[],
+    });
+  }
+
+  @override
+  Future<Json> subnetInventory(String network, {String show = 'all'}) {
+    final rows = <Json>[];
+    for (var i = 1; i < 31; i++) {
+      final ip = '192.0.2.$i';
+      final res = _reservations.where((r) => r['ip'] == ip).firstOrNull;
+      final state = i == 1
+          ? 'system'
+          : res != null
+              ? 'reserved'
+              : i % 4 == 0
+                  ? 'seen'
+                  : i % 9 == 0
+                      ? 'dns'
+                      : 'free';
+      rows.add({
+        'ip': ip,
+        'state': state,
+        'state_label': const {'system': 'Gateway', 'reserved': 'Reserved', 'seen': 'Seen on network', 'dns': 'DNS only', 'free': 'Free'}[state],
+        'name': state == 'system' ? 'gateway' : res?['name'] ?? (state == 'dns' ? 'old-host-$i.demo.example' : ''),
+        'mac': res?['mac'] ?? (state == 'seen' ? _mac(i) : ''),
+        'dns': state == 'dns' ? ['old-host-$i.demo.example'] : <String>[],
+        'reserved_on': res == null ? <String>[] : res['servers'],
+        'missing_on': res == null ? <String>[] : res['missing'],
+      });
+    }
+    final counts = <String, int>{};
+    for (final r in rows) {
+      counts[r['state'] as String] = (counts[r['state']] ?? 0) + 1;
+    }
+    return _delay({
+      'network': '192.0.2.0/27',
+      'total': rows.length,
+      'counts': counts,
+      'show': show,
+      'results': show == 'all' ? rows : rows.where((r) => r['state'] == (show == 'reserved' ? 'reserved' : show)).toList(),
+      'server_errors': <Json>[],
+    });
+  }
+
+  @override
+  Future<Json> pingOptions() => _delay({
+        'vrfs': ['default', 'DATA', 'CLINICAL'],
+      });
 
   @override
   Future<List<Json>> deviceSessions() => _delay([

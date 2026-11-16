@@ -6,6 +6,7 @@ import '../services/api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'dhcp_reserve_screen.dart';
+import '../widgets/nav_drawer.dart';
 
 class DhcpScreen extends StatefulWidget {
   const DhcpScreen({super.key});
@@ -50,7 +51,7 @@ class _DhcpScreenState extends State<DhcpScreen> {
     final rows = jsonList(result?['results']);
     final errors = (result?['errors'] as List? ?? []).map((e) => '$e').toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('DHCP Reservations')),
+      appBar: AppBar(leading: const NavMenuButton(), title: const Text('DHCP Reservations')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
         backgroundColor: const Color(0xFF238636),

@@ -46,6 +46,29 @@ abstract class NetsmartApi {
   Future<List<Json>> chatModels();
   Future<ChatConnection> openChat();
 
+  /// The web app's sidebar for this user (same sections, groups, links and
+  /// permission filtering as the NetSmart web UI).
+  /// `{sections: [{title, accent, groups: [{label, icon, items: [{title, path|url, native?, external?}]}]}]}`
+  Future<Json> navigation();
+
+  /// One-time ticket that signs the in-app web view into the NetSmart web UI
+  /// as the current user (`{url, ticket, expires_in}`); the web view POSTs
+  /// `ticket` to `url` and the server redirects to [path].
+  Future<Json> webSession(String path);
+
+  // Native versions of web tools (`/api/mobile/v1/tools/...`).
+  Future<Json> dcVlans(Map<String, String> filters);
+  Future<Json> changeRequests({bool refresh = false});
+  Future<Json> changeRequest(String sysId);
+  Future<List<Json>> calendarEvents(DateTime from, DateTime to);
+  Future<Json> nurseCallSwitches();
+  Future<List<Json>> sites(String query);
+  Future<Json> site(String siteId);
+  Future<Json> dnsLookup(String query);
+  Future<Json> ipInfo(String query);
+  Future<Json> subnetInventory(String network, {String show = 'all'});
+  Future<Json> pingOptions();
+
   Future<List<Json>> deviceSessions();
   Future<void> revokeDeviceSession(String sessionId);
   Future<Json> registerPush({String? token, required bool enabled});

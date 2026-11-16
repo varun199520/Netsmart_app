@@ -8,6 +8,7 @@ import '../services/api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'job_screen.dart';
+import '../widgets/nav_drawer.dart';
 
 const _capabilityLabels = {
   'tracker': 'Device tracker',
@@ -66,7 +67,7 @@ class _MoreScreenState extends State<MoreScreen> {
     final me = state.me ?? const {};
     final caps = state.caps;
     return Scaffold(
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(leading: const NavMenuButton(), title: const Text('More')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         SectionCard(children: [
           Row(children: [

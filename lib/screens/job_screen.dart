@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../services/api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'tools/switch_tools_screens.dart';
 
 const jobKindLabels = {
   'port_read': 'Read port config',
@@ -14,6 +15,8 @@ const jobKindLabels = {
   'port_config': 'Configure port',
   'ise_removal': 'Remove ISE',
   'dhcp_reserve': 'DHCP reservation',
+  'ping': 'Ping from switch',
+  'port_usage': 'Available switchports',
 };
 
 Color jobStatusColor(String status) => switch (status) {
@@ -131,6 +134,10 @@ class _JobScreenState extends State<JobScreen> {
 
   List<Widget> _result(String kind, Json r) {
     switch (kind) {
+      case 'ping':
+        return pingResult(context, r);
+      case 'port_usage':
+        return portUsageResult(context, r);
       case 'port_read':
         final config = str(r['config']);
         return [
@@ -211,6 +218,7 @@ class _JobScreenState extends State<JobScreen> {
         'ip' => 'IP',
         'mac' => 'MAC',
         'vlan' => 'VLAN',
+        'vrf' => 'VRF',
         _ => key[0].toUpperCase() + key.substring(1).replaceAll('_', ' '),
       };
 }

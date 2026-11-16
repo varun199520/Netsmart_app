@@ -6,6 +6,7 @@ import '../services/api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'chat_screen.dart';
+import '../widgets/nav_drawer.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -78,7 +79,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     final sessions = _sessions;
     return Scaffold(
-      appBar: AppBar(title: const Text('Assistant')),
+      appBar: AppBar(leading: const NavMenuButton(), title: const Text('Assistant')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
         backgroundColor: Nexus.blue,

@@ -41,6 +41,17 @@ class Prefs {
     await _write(_favorites, list);
   }
 
+  /// Recently opened sidebar tools: `{"title", "path", "native"?}`.
+  List<Json> get recentTools => _read(_recentTools);
+
+  Future<void> addRecentTool(Json item) async {
+    final list = recentTools..removeWhere((e) => e['path'] == item['path'] && e['url'] == item['url']);
+    list.insert(0, {'title': item['title'], 'path': ?item['path'], 'url': ?item['url'], 'native': ?item['native']});
+    await _write(_recentTools, list.take(5).toList());
+  }
+
+  static const _recentTools = 'recent_tools_v1';
+
   String? get chatModel => _sp.getString(_model);
   Future<void> setChatModel(String? id) => id == null ? _sp.remove(_model) : _sp.setString(_model, id);
 

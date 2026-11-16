@@ -162,6 +162,108 @@ void main() {
     expect(find.text('Nothing yet'), findsOneWidget);
   });
 
+  testWidgets('demo mode: sidebar mirrors the web menu and opens native tools', (tester) async {
+    await startDemo(tester);
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    expect(find.text('NETWORK OPERATIONS'), findsOneWidget);
+    expect(find.text('Switch Management'), findsOneWidget);
+    expect(find.text('Demo User'), findsWidgets);
+
+    // Expand a group, open a native tool.
+    await tester.tap(find.text('Switch Management'));
+    await settle(tester, 2);
+    await tester.tap(find.text('Nurse Call Switches'));
+    await settle(tester);
+    expect(find.widgetWithText(AppBar, 'Nurse Call Switches'), findsOneWidget);
+    expect(find.text('DEMO-NCF-SW01'), findsOneWidget);
+    await tester.pageBack();
+    await settle(tester, 2);
+
+    // Search across every section; the recent list remembers the tool.
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    expect(find.text('RECENT'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Search tools…'), 'calc');
+    await settle(tester, 1);
+    expect(find.text('Security & Access › DNS & IP Management'), findsOneWidget);
+    await tester.tap(find.text('Subnet Calculator'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'IP address'), '10.20.30.77/26');
+    await tester.tap(find.widgetWithText(FilledButton, 'Calculate'));
+    await settle(tester, 1);
+    expect(find.text('10.20.30.64/26'), findsOneWidget);
+    expect(find.text('10.20.30.65 – 10.20.30.126'), findsOneWidget);
+    expect(find.text('255.255.255.192'), findsOneWidget);
+  });
+
+  testWidgets('demo mode: sidebar tab items switch tabs; web pages explain demo limits', (tester) async {
+    await startDemo(tester);
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    await tester.tap(find.text('DNS & IP Management'));
+    await settle(tester, 2);
+    await tester.tap(find.text('IP Reservations'));
+    await settle(tester);
+    expect(find.widgetWithText(AppBar, 'DHCP Reservations'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('NetSmart menu').hitTestable());
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Search tools…'), 'guide');
+    await settle(tester, 1);
+    await tester.tap(find.text('User Guide'));
+    await settle(tester, 2);
+    expect(find.textContaining('needs a real sign-in'), findsOneWidget);
+  });
+
+  testWidgets('demo mode: ping from switch runs as a job', (tester) async {
+    await startDemo(tester);
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    await tester.tap(find.text('Switch Management'));
+    await settle(tester, 2);
+    await tester.tap(find.text('Ping from Switch'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'IP address to ping'), '192.0.2.100');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Ping'));
+    await settle(tester, 3);
+    expect(find.text('Ping from switch'), findsOneWidget);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 3800)));
+    await settle(tester, 6);
+    expect(find.text('succeeded'), findsOneWidget);
+    expect(find.textContaining('Success rate is 100 percent'), findsOneWidget);
+  });
+
+  testWidgets('demo mode: DNS lookup and change requests render', (tester) async {
+    await startDemo(tester);
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Search tools…'), 'dns lookup');
+    await settle(tester, 1);
+    await tester.tap(find.text('DNS Lookup'));
+    await settle(tester);
+    await tester.enterText(find.byType(TextField).first, '192.0.2.100');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+    await settle(tester);
+    expect(find.text('workstation-00.demo.example'), findsWidgets);
+    expect(find.text('missing on 1'), findsOneWidget);
+    await tester.pageBack();
+    await settle(tester, 2);
+
+    await tester.tap(find.byTooltip('NetSmart menu').hitTestable());
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Search tools…'), 'change');
+    await settle(tester, 1);
+    await tester.tap(find.text('Change Requests'));
+    await settle(tester);
+    expect(find.text('CHG0010001'), findsOneWidget);
+    await tester.tap(find.text('CHG0010002'));
+    await settle(tester);
+    expect(find.text('Affected devices'.toUpperCase()), findsOneWidget);
+  });
+
   testWidgets('demo mode: search an endpoint from the tracker tab', (tester) async {
     await startDemo(tester);
     expect(find.text('Device Tracker'), findsOneWidget);

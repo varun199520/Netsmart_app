@@ -9,6 +9,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import 'endpoint_screen.dart';
 import 'switch_screen.dart';
+import '../widgets/nav_drawer.dart';
 
 enum _Mode { endpoint, switchName }
 
@@ -87,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final prefs = state.prefs;
     final query = _controller.text.trim();
     return Scaffold(
-      appBar: AppBar(title: const Text('Device Tracker')),
+      appBar: AppBar(leading: const NavMenuButton(), title: const Text('Device Tracker')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

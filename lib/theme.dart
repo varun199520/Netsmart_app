@@ -19,6 +19,19 @@ class NS {
   static const orange = Color(0xFFF0883E);
 
   static const mono = TextStyle(fontFamily: 'Menlo', fontFamilyFallback: ['Courier', 'monospace']);
+
+  /// Web sidebar section accents (`data-accent` in reimagined_base.css).
+  static Color sectionAccent(String? key) => switch (key) {
+        'ai' => accent,
+        'network' => success,
+        'security' => danger,
+        'integr' => purple,
+        'facility' => warning,
+        'itops' => cyan,
+        'content' => orange,
+        'platform' => Color(0xFF6E7681),
+        _ => textSecondary,
+      };
 }
 
 /// The chatbot's "Nexus" palette, used only on chat screens.
