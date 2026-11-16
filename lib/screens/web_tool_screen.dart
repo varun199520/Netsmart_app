@@ -83,7 +83,7 @@ class _WebToolScreenState extends State<WebToolScreen> {
       final s = await context.read<AppState>().api.webSession(widget.path);
       final body = 'ticket=${Uri.encodeQueryComponent(str(s['ticket']))}';
       await _web.loadRequest(
-        Uri.parse(str(s['url'])),
+        Uri.parse('${AppConfig.baseUrl}${str(s['path'], '/mobile/auth/web/')}'),
         method: LoadRequestMethod.post,
         headers: const {'Content-Type': 'application/x-www-form-urlencoded'},
         body: Uint8List.fromList(utf8.encode(body)),

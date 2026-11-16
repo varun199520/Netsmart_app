@@ -52,8 +52,8 @@ abstract class NetsmartApi {
   Future<Json> navigation();
 
   /// One-time ticket that signs the in-app web view into the NetSmart web UI
-  /// as the current user (`{url, ticket, expires_in}`); the web view POSTs
-  /// `ticket` to `url` and the server redirects to [path].
+  /// as the current user (`{path, ticket, expires_in}`); the web view POSTs
+  /// `ticket` to `<base>/<path>` and the server redirects to [path].
   Future<Json> webSession(String path);
 
   // Native versions of web tools (`/api/mobile/v1/tools/...`).

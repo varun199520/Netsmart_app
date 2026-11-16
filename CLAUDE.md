@@ -53,6 +53,19 @@ capability from `/me`):
   missing-on-N), create reservation (next free IP in a subnet, or a specific IP).
 - **More** — profile + capabilities, my recent actions (jobs), job
   notifications toggle, signed-in devices (remote sign-out), version, sign out.
+- **NetSmart sidebar (drawer)** — hamburger on every tab / left-edge swipe.
+  Mirrors the web sidebar *per user*: the server renders the real
+  `rb_nav_content` block of `templates/reimagined_base.html` and parses it
+  (`GET nav`), so permissions and new web links carry over automatically.
+  Items open a bottom tab, a native screen (`lib/screens/tools/`, registry in
+  `tool_router.dart`), Safari (external links), or the web page in-app
+  (`WebToolScreen`, WKWebView) **already signed in** via a one-time ticket —
+  the user never logs in twice. Native so far: Subnet Calculator (on-device),
+  Subnet Lookup, DHCP IP/MAC Lookup, DNS Lookup, DC Fabric VLANs, Ping from
+  Switch + Available Switchports (jobs), Nurse Call Switches, Site Locations,
+  Change Requests, Team Calendar. To make another web tool native: add its
+  template tag to `NATIVE_TAGS` (server `mobile_api/services/nav.py`), an
+  endpoint gated by `views_tools._gated`, then a screen + `nativeTools` entry.
 - **Demo mode** — "Explore a demo with sample data" on the sign-in screen.
   Fully offline fake data (`DemoApi`, RFC 5737 addresses, switch
   `DEMO-ACC-SW01`); an orange banner shows on every screen. **Required for App
@@ -128,6 +141,11 @@ different IP than expected — report the IP).
 | `services/prefs.dart` | recents, favorites, chat model, etc. (SharedPreferences) |
 | `widgets/common.dart` | `SectionCard`, `KV`, `Pill`, `Loading`, `ErrorView`, `CenterMessage`, `confirm`, `showSnack`, `ago` |
 | `screens/` | sign_in, home_shell, search, endpoint, switch, port_sheet (+ `ConfigurePortScreen`), job (+ `openJob`), dhcp, dhcp_reserve, chat_list, chat, more (+ `JobsScreen`, `DeviceSessionsScreen`) |
+| `widgets/nav_drawer.dart` | the sidebar drawer (`NavDrawer`, `NavScope`, `NavMenuButton`, boxicon→Material map) |
+| `screens/web_tool_screen.dart` | signed-in web page (ticket POST, hides web sidebar/top bar, login-page retry) |
+| `screens/tools/` | native web tools + `tool_router.dart` (`openNavItem`, `nativeTools`) |
+| `services/web_session.dart` | clears web view cookies on sign-out |
+| `services/ipv4.dart` | subnet math for the calculator |
 | `ios/Runner/AppDelegate.swift` | `PushBridge` plugin: requests permission, returns hex APNs token |
 
 ## Backend contract (`/api/mobile/v1/`, Bearer access token)
@@ -150,6 +168,15 @@ different IP than expected — report the IP).
 - `GET/POST chat/sessions` · `DELETE chat/sessions/<id>` ·
   `GET chat/sessions/<id>/history` · `GET chat/models` · `GET chat/diagrams/<id>`
 - `POST push/register {enabled, token?}`
+- `GET nav` → `{sections[{title, accent, groups[{label, icon, items[{title, path|url, native?, external?}]}]}]}`
+- `POST auth/web-session {path}` → `{path:"/mobile/auth/web/", ticket, expires_in:60}`; the web
+  view POSTs `ticket=` to `/mobile/auth/web/` → Django session + 302 to `path`. Single use,
+  bound to the device session; revoking the device session deletes those web sessions.
+- `GET tools/dc-vlans?ip|vlan|switch` · `tools/changes[?refresh=1]` · `tools/changes/<sys_id>` ·
+  `tools/calendar?from&to` · `tools/nurse-call` · `tools/sites[?q]` · `tools/sites/<id>` ·
+  `tools/dns?q` · `tools/ip-info?q` · `tools/subnet?net` · `tools/ping` (VRFs). Each is gated by
+  "tool is on the user's web sidebar" **and** the web page's own view check.
+- Job kinds `ping {ip, vrf}` (switch = last ARP sighting) and `port_usage {switch_id}`.
 - WebSocket `wss://<host>/ws/mobile/chat/` (Bearer header). Client frames: turn
   `{query, chat_session_uuid, model_name, agent_mode, data_source:"network_agent"}`,
   `{"type":"cancel"}`, `{"type":"steer","id","text"}`. Server frames: `token`,
