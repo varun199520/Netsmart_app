@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../app_state.dart';
+import '../../config.dart';
 import '../../services/api.dart';
 import '../../widgets/common.dart';
 import '../web_tool_screen.dart';
@@ -60,13 +61,15 @@ Future<void> openNavItem(BuildContext context, Json item, {bool Function(String 
     return;
   }
   final url = str(item['url']);
-  if (item['external'] == true && url.isNotEmpty) {
+  final uri = Uri.tryParse(url);
+  final partner = uri != null && AppConfig.isPartnerSite(uri);
+  if (item['external'] == true && url.isNotEmpty && !partner) {
     final ok = await openOffsite(Uri.parse(url));
     if (!ok && context.mounted) showSnack(context, "Couldn't open $url", error: true);
     return;
   }
   final path = str(item['path']);
-  if (path.isEmpty) return;
+  if (path.isEmpty && !partner) return;
   if (state.isDemo) {
     showSnack(context, '$title opens the NetSmart website, which needs a real sign-in. '
         'Demo mode includes the native screens only.');
@@ -74,6 +77,7 @@ Future<void> openNavItem(BuildContext context, Json item, {bool Function(String 
   }
   await state.prefs.addRecentTool(item);
   if (context.mounted) {
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => WebToolScreen(title: title, path: path)));
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => partner ? WebToolScreen(title: title, url: uri) : WebToolScreen(title: title, path: path)));
   }
 }

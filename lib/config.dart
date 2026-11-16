@@ -10,6 +10,14 @@ class AppConfig {
   static const redirectUri = '$callbackScheme://auth';
   static const apiPrefix = '/api/mobile/v1';
 
+  /// Other NetSmart instances (e.g. NetSmart DCM) whose pages open inside the
+  /// app's web view instead of a browser. The one-time web ticket only signs
+  /// in to [baseUrl], so these use their own Microsoft sign-in, which the web
+  /// view remembers after the first time.
+  static const partnerHosts = {'netsmart-dcm.stanfordmed.org'};
+
+  static bool isPartnerSite(Uri uri) => uri.scheme == 'https' && partnerHosts.contains(uri.host);
+
   static Uri api(String path, [Map<String, String>? query]) {
     final uri = Uri.parse('$baseUrl$apiPrefix/$path');
     return query == null ? uri : uri.replace(queryParameters: query);

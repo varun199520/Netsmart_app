@@ -59,9 +59,13 @@ capability from `/me`):
   (`GET nav`), so permissions and new web links carry over automatically.
   Items open a bottom tab, a native screen (`lib/screens/tools/`, registry in
   `tool_router.dart`), an in-app browser sheet (external links on other hosts,
-  e.g. NetSmart DCM — `openOffsite`; own login, the ticket only covers the
-  NetSmart host), or the web page in-app
-  (`WebToolScreen`, WKWebView) **already signed in** via a one-time ticket —
+  `openOffsite`), or the web page in-app. **Partner sites**
+  (`AppConfig.partnerHosts`, currently NetSmart DCM
+  `netsmart-dcm.stanfordmed.org`) are external links that still open in
+  `WebToolScreen(url:)`: no ticket (it only works on the prd host, and DCM is
+  a separate instance with its own DB), the site's own Microsoft sign-in once
+  (the web view remembers it), and its web sidebar stays visible. NetSmart web pages
+  open in-app (`WebToolScreen`, WKWebView) **already signed in** via a one-time ticket —
   the user never logs in twice. Native so far: Subnet Calculator (on-device),
   Subnet Lookup, DHCP IP/MAC Lookup, DNS Lookup, DC Fabric VLANs, Ping from
   Switch + Available Switchports (jobs), Nurse Call Switches, Site Locations,

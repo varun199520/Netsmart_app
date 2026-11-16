@@ -19,11 +19,18 @@ import 'tools/tool_router.dart' show openOffsite;
 /// the server answers with the normal web session cookie and a redirect to
 /// [path] — so the user never signs in twice. The web sidebar/top bar are
 /// hidden because the app's own drawer and app bar replace them.
+///
+/// With [url] set to a partner site ([AppConfig.isPartnerSite], e.g. NetSmart
+/// DCM) the page loads directly instead: no ticket (it only works on
+/// [AppConfig.baseUrl]), the site's own Microsoft sign-in, which the web view
+/// remembers, and its own sidebar stays visible since the app's drawer
+/// doesn't cover that site.
 class WebToolScreen extends StatefulWidget {
-  const WebToolScreen({super.key, required this.title, required this.path});
+  const WebToolScreen({super.key, required this.title, this.path = '', this.url});
 
   final String title;
   final String path;
+  final Uri? url;
 
   @override
   State<WebToolScreen> createState() => _WebToolScreenState();
@@ -63,7 +70,7 @@ class _WebToolScreenState extends State<WebToolScreen> {
         onProgress: (p) {
           if (mounted) setState(() => _progress = p / 100);
         },
-        onPageStarted: (_) => _web.runJavaScript(_injectChrome).catchError((_) {}),
+        onPageStarted: _hideWebChrome,
         onPageFinished: _pageFinished,
         onNavigationRequest: _navigationRequest,
         onWebResourceError: (e) {
@@ -71,7 +78,26 @@ class _WebToolScreenState extends State<WebToolScreen> {
           setState(() => _error = e.description.isEmpty ? 'The page could not be loaded.' : e.description);
         },
       ));
-    _signIn();
+    _load();
+  }
+
+  bool get _partner => widget.url != null;
+
+  /// Opens the page: a partner site loads directly, a NetSmart page via ticket.
+  Future<void> _load() async {
+    if (!_partner) return _signIn();
+    setState(() {
+      _error = null;
+      _signingIn = false;
+    });
+    await _web.loadRequest(widget.url!);
+  }
+
+  /// Hides the web sidebar/top bar on NetSmart pages only; partner sites keep
+  /// theirs because the app's drawer doesn't cover them.
+  Future<void> _hideWebChrome(String url) async {
+    if (Uri.tryParse(url)?.host != _host) return;
+    await _web.runJavaScript(_injectChrome).catchError((_) {});
   }
 
   Future<void> _signIn() async {
@@ -96,11 +122,12 @@ class _WebToolScreenState extends State<WebToolScreen> {
   }
 
   Future<void> _pageFinished(String url) async {
-    await _web.runJavaScript(_injectChrome).catchError((_) {});
+    await _hideWebChrome(url);
     final uri = Uri.tryParse(url);
     // Landed on a login page: the web session didn't stick (or expired while
-    // the page was open). Hand the session over again, once.
-    if (uri != null && _isLoginPage(uri)) {
+    // the page was open). Hand the session over again, once. (Not for partner
+    // pages: there the ticket has no page of its own to return to.)
+    if (!_partner && uri != null && _isLoginPage(uri)) {
       if (!_retried) {
         _retried = true;
         await _signIn();
@@ -125,7 +152,11 @@ class _WebToolScreenState extends State<WebToolScreen> {
   NavigationDecision _navigationRequest(NavigationRequest request) {
     final uri = Uri.tryParse(request.url);
     if (uri == null) return NavigationDecision.prevent;
-    final sameSite = uri.host == _host || uri.scheme == 'about' || uri.scheme == 'data' || uri.scheme == 'blob';
+    final sameSite = uri.host == _host ||
+        AppConfig.isPartnerSite(uri) ||
+        uri.scheme == 'about' ||
+        uri.scheme == 'data' ||
+        uri.scheme == 'blob';
     // The company SSO login lives on another host; let it load inside the
     // view so a rare re-login still lands back here.
     final sso = uri.host.contains('adfs') || uri.host.contains('login.microsoftonline');
@@ -153,7 +184,7 @@ class _WebToolScreenState extends State<WebToolScreen> {
             IconButton(
               tooltip: 'Reload',
               icon: const Icon(Icons.refresh),
-              onPressed: _error != null ? _signIn : () => _web.reload(),
+              onPressed: _error != null ? _load : () => _web.reload(),
             ),
           ],
           bottom: PreferredSize(
@@ -170,7 +201,7 @@ class _WebToolScreenState extends State<WebToolScreen> {
         body: _error != null
             ? ErrorView(_error!, onRetry: () {
                 _retried = false;
-                _signIn();
+                _load();
               })
             : WebViewWidget(controller: _web),
       ),

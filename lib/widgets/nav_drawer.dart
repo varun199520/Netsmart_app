@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../app_state.dart';
+import '../config.dart';
 import '../services/api.dart';
 import '../theme.dart';
 import 'common.dart';
@@ -352,7 +353,8 @@ class _ItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final native = item['native'] != null;
-    final external = item['external'] == true;
+    // Partner sites (e.g. DCM) open in-app like web pages, so no "leaves app" icon.
+    final external = item['external'] == true && !AppConfig.isPartnerSite(Uri.tryParse(str(item['url'])) ?? Uri());
     return InkWell(
       onTap: onTap,
       child: Container(

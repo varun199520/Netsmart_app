@@ -518,6 +518,19 @@ class DemoApi implements NetsmartApi {
             ],
           },
           {
+            'title': 'Inventory Management',
+            'accent': 'integr',
+            'groups': [
+              {
+                'label': 'NetSmart DCM',
+                'icon': 'bx-data',
+                'items': [
+                  {'title': 'NetSmart DCM', 'url': 'https://netsmart-dcm.stanfordmed.org/', 'external': true},
+                ],
+              },
+            ],
+          },
+          {
             'title': 'IT Operations',
             'accent': 'itops',
             'groups': [

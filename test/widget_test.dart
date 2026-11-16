@@ -216,6 +216,21 @@ void main() {
     expect(find.textContaining('needs a real sign-in'), findsOneWidget);
   });
 
+  testWidgets('demo mode: NetSmart DCM is an in-app page, not an external link', (tester) async {
+    await startDemo(tester);
+    await tester.tap(find.byTooltip('NetSmart menu'));
+    await settle(tester);
+    await tester.enterText(find.widgetWithText(TextField, 'Search tools…'), 'dcm');
+    await settle(tester, 1);
+    final item = find.text('NetSmart DCM').last;
+    final row = find.ancestor(of: item, matching: find.byType(InkWell)).first;
+    expect(find.descendant(of: row, matching: find.byIcon(Icons.open_in_new)), findsNothing);
+    expect(find.descendant(of: row, matching: find.byIcon(Icons.language)), findsOneWidget);
+    await tester.tap(item);
+    await settle(tester, 2);
+    expect(find.textContaining('needs a real sign-in'), findsOneWidget);
+  });
+
   testWidgets('demo mode: ping from switch runs as a job', (tester) async {
     await startDemo(tester);
     await tester.tap(find.byTooltip('NetSmart menu'));
